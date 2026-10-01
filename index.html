@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>已婚局 · 隐秘社交</title>
+<style>
+  :root {
+    --bg: #0f0f13;
+    --card: #1a1a24;
+    --accent: #e11d48;
+    --text: #e5e5e5;
+    --muted: #a1a1aa;
+    --border: #2a2a35;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.5;
+  }
+  .container { max-width: 680px; margin: 0 auto; padding: 16px; }
+  header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 0;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 24px;
+  }
+  .logo { font-size: 1.4rem; font-weight: 700; color: var(--accent); }
+  .user-info { font-size: 0.9rem; color: var(--muted); }
+  .card {
+    background: var(--card);
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 16px;
+    border: 1px solid var(--border);
+  }
+  .post-header {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+  .avatar {
+    width: 44px; height: 44px;
+    border-radius: 50%;
+    background: #333;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    color: #fff;
+    flex-shrink: 0;
+  }
+  .meta { flex: 1; }
+  .name { font-weight: 600; }
+  .status { font-size: 0.8rem; color: var(--accent); }
+  .time { font-size: 0.8rem; color: var(--muted); }
+  .content { white-space: pre-wrap; margin-bottom: 12px; }
+  .post-img {
+    max-width: 100%;
+    border-radius: 8px;
+    margin-top: 8px;
+    max-height: 400px;
+    object-fit: contain;
+  }
+  .actions {
+    display: flex;
+    gap: 16px;
+    margin-top: 12px;
+    font-size: 0.9rem;
+    color: var(--muted);
+  }
+  .actions span { cursor: pointer; }
+  .actions span:hover { color: var(--accent); }
+  textarea, input[type="text"] {
+    width: 100%;
+    background: #111;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px;
+    color: var(--text);
+    font-size: 1rem;
+    resize: vertical;
+    min-height: 80px;
+  }
+  .btn {
+    background: var(--accent);
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 12px;
+  }
+  .btn:hover { opacity: 0.9; }
+  .btn-secondary {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text);
+  }
+  .composer { margin-bottom: 24px; }
+  .file-label {
+    display: inline-block;
+    margin-top: 8px;
+    font-size: 0.9rem;
+    color: var(--muted);
+    cursor: pointer;
+  }
+  #preview {
+    max-width: 200px;
+    margin-top: 8px;
+    border-radius: 6px;
+    display: none;
+  }
+  .comment-box {
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border);
+  }
+  .comment {
+    font-size: 0.9rem;
+    margin-bottom: 8px;
+    padding-left: 8px;
+    border-left: 2px solid var(--accent);
+  }
+  .login-modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+  }
+  .login-box {
+    background: var(--card);
+    padding: 32px;
+    border-radius: 16px;
+    width: 90%;
+    max-width: 400px;
+  }
+  .login-box h2 { margin-bottom: 16px; }
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+  <div id="loginModal" class="login-modal">
+    <div class="login-box">
+      <h2>已婚局 · 隐秘登录</h2>
+      <p style="color:var(--muted);margin-bottom:16px;font-size:0.9rem;">
+        仅限已婚男性。所有内容高度隐秘，支持露骨表达。
+      </p>
+      <input type="text" id="usernameInput" placeholder="你的代号（如：老王36）" style="margin-bottom:12px;">
+      <input type="text" id="cityInput" placeholder="所在城市（可选）" style="margin-bottom:16px;">
+      <button class="btn" onclick="login()">进入社区</button>
+    </div>
+  </div>
+
+  <div class="container hidden" id="app">
+    <header>
+      <div class="logo">已婚局</div>
+      <div class="user-info">
+        <span id="currentUser"></span>
+        <button class="btn btn-secondary" style="margin-left:12px;padding:6px 12px;font-size:0.8rem;" onclick="logout()">退出</button>
+      </div>
+    </header>
+
+    <div class="card composer">
+      <textarea id="postContent" placeholder="分享你的真实欲望、约炮经历、或者想被操的感觉……越露骨越好"></textarea>
+      <label class="file-label">
+        📷 添加图片（支持露骨）
+        <input type="file" id="imageInput" accept="image/*" style="display:none;" onchange="previewImage(event)">
+      </label>
+      <img id="preview" alt="预览">
+      <button class="btn" onclick="publishPost()">发布</button>
+    </div>
+
+    <div id="feed"></div>
+  </div>
+
+<script>
+  // ========== 数据存储 ==========
+  const STORAGE_KEY = 'married_affair_posts_v1';
+  const USER_KEY = 'married_affair_user';
+
+  let currentUser = null;
+  let posts = [];
+
+  // 初始模拟数据（露骨向）
+  const seedPosts = [
+    {
+      id: 1,
+      user: "老王36·北京",
+      content: "老婆最近总是拒绝，已经连续一个月没碰了。周末想找个能跪着舔的骚货，最好能让我内射。有同城的吗？私信我看逼照。",
+      image: null,
+      time: "2小时前",
+      likes: 18,
+      comments: [
+        { user: "张哥41", text: "北京昌平有，能深喉，能被操哭" },
+        { user: "阿杰29", text: "同城+1，想被已婚大叔操" }
+      ]
+    },
+    {
+      id: 2,
+      user: "阿杰29·上海",
+      content: "昨晚被一个45岁的已婚大叔操到腿软。他让我叫爸爸，一边操一边打我屁股，最后全射在我脸上。太爽了。有没有想继续调教我的？",
+      image: null,
+      time: "5小时前",
+      likes: 42,
+      comments: [
+        { user: "老李42", text: "上海徐汇，周末有空继续操你" }
+      ]
+    },
+    {
+      id: 3,
+      user: "陈总48·广州",
+      content: "出差在酒店，想约个年轻点的过来被我操。要求：能接受口交吞精，能被掐脖子，最好有点经验。报房号私聊。",
+      image: null,
+      time: "昨天",
+      likes: 27,
+      comments: []
+    }
+  ];
+
+  // ========== 初始化 ==========
+  function init() {
+    const savedUser = localStorage.getItem(USER_KEY);
+    if (savedUser) {
+      currentUser = JSON.parse(savedUser);
+      showApp();
+    }
+    loadPosts();
+  }
+
+  function loadPosts() {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      posts = JSON.parse(saved);
+    } else {
+      posts = seedPosts;
+      savePosts();
+    }
+    renderFeed();
+  }
+
+  function savePosts() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(posts));
+  }
+
+  // ========== 登录 ==========
+  function login() {
+    const name = document.getElementById('usernameInput').value.trim();
+    const city = document.getElementById('cityInput').value.trim();
+    if (!name) {
+      alert('请输入代号');
+      return;
+    }
+    currentUser = {
+      name: name + (city ? '·' + city : ''),
+      city: city || '未知'
+    };
+    localStorage.setItem(USER_KEY, JSON.stringify(currentUser));
+    showApp();
+  }
+
+  function logout() {
+    localStorage.removeItem(USER_KEY);
+    currentUser = null;
+    document.getElementById('app').classList.add('hidden');
+    document.getElementById('loginModal').classList.remove('hidden');
+  }
+
+  function showApp() {
+    document.getElementById('loginModal').classList.add('hidden');
+    document.getElementById('app').classList.remove('hidden');
+    document.getElementById('currentUser').textContent = currentUser.name + '（已婚）';
+    renderFeed();
+  }
+
+  // ========== 发帖 ==========
+  let selectedImage = null;
+
+  function previewImage(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(ev) {
+      selectedImage = ev.target.result;
+      const preview = document.getElementById('preview');
+      preview.src = selectedImage;
+      preview.style.display = 'block';
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function publishPost() {
+    const content = document.getElementById('postContent').value.trim();
+    if (!content && !selectedImage) {
+      alert('写点什么或上传图片');
+      return;
+    }
+    const newPost = {
+      id: Date.now(),
+      user: currentUser.name,
+      content: content,
+      image: selectedImage,
+      time: '刚刚',
+      likes: 0,
+      comments: []
+    };
+    posts.unshift(newPost);
+    savePosts();
+    renderFeed();
+    // 清空
+    document.getElementById('postContent').value = '';
+    document.getElementById('imageInput').value = '';
+    document.getElementById('preview').style.display = 'none';
+    selectedImage = null;
+  }
+
+  // ========== 渲染 ==========
+  function renderFeed() {
+    const feed = document.getElementById('feed');
+    feed.innerHTML = posts.map(post => `
+      <div class="card">
+        <div class="post-header">
+          <div class="avatar">${post.user[0]}</div>
+          <div class="meta">
+            <div class="name">${post.user}</div>
+            <div class="status">已婚男性 · ${post.time}</div>
+          </div>
+        </div>
+        <div class="content">${escapeHtml(post.content)}</div>
+        ${post.image ? `<img class="post-img" src="${post.image}" alt="图片">` : ''}
+        <div class="actions">
+          <span onclick="likePost(${post.id})">❤️ ${post.likes}</span>
+          <span onclick="toggleComment(${post.id})">💬 评论 (${post.comments.length})</span>
+        </div>
+        <div class="comment-box hidden" id="comments-${post.id}">
+          ${post.comments.map(c => `
+            <div class="comment"><strong>${c.user}</strong>：${escapeHtml(c.text)}</div>
+          `).join('')}
+          <input type="text" id="comment-input-${post.id}" placeholder="写评论（越骚越好）" style="margin-top:8px;">
+          <button class="btn" style="padding:6px 12px;font-size:0.85rem;" onclick="addComment(${post.id})">发送</button>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function likePost(id) {
+    const post = posts.find(p => p.id === id);
+    if (post) {
+      post.likes++;
+      savePosts();
+      renderFeed();
+    }
+  }
+
+  function toggleComment(id) {
+    const box = document.getElementById(`comments-${id}`);
+    box.classList.toggle('hidden');
+  }
+
+  function addComment(id) {
+    const input = document.getElementById(`comment-input-${id}`);
+    const text = input.value.trim();
+    if (!text) return;
+    const post = posts.find(p => p.id === id);
+    if (post) {
+      post.comments.push({
+        user: currentUser.name,
+        text: text
+      });
+      savePosts();
+      renderFeed();
+      // 保持评论框打开
+      setTimeout(() => {
+        document.getElementById(`comments-${id}`).classList.remove('hidden');
+      }, 0);
+    }
+  }
+
+  function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  }
+
+  // 启动
+  init();
+</script>
+</body>
+</html>
